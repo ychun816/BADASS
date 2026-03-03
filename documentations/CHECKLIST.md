@@ -1,23 +1,43 @@
 # Checklist
 
 
-
 ---
 
 # P1 | GNS3 + Docker + Routing Stack Validation Checklist
+
+## 0 GNS3 / Docker install in vm
+
+- [x] Install required base system packages
+- [x] Install Docker Engine and enable service
+- [x] Install GNS3 GUI and Server via `pipx`
+- [x] Add user to relevant groups (`docker`, `libvirt`, `kvm`, `wireshark`, `ubridge`)
+- [x] root succesfully installed with ssh, docker, gns3
+- [x] user installed with ssh,docker, gns3
+> check ssh status 
+```bash
+systemctl status ssh || systemctl status sshd
+whoami
+```
+> copy ssh frm root to user(yilin) -> use same ssh 
+```bash
+# in user
+sudo cp -r /root/.ssh/ /home/yilin/
+sudo chown -R yilin:yilin /home/yilin/.ssh/
+```
+
 
 ## 1️⃣ Environment Validation
 
 ### Docker
 
-- [ ] `docker ps` runs without error
+- [x] `docker ps` runs without error
 - [ ] `docker build` works successfully
 - [ ] Container starts without crashing
-- [ ] No permission issues
+- [x] No permission issues
 
 ### GNS3
 
-- [ ] GNS3 GUI connects to local server
+- [x] GNS3 GUI connects to local server
 - [ ] Docker integration enabled in Preferences
 - [ ] Docker template can be created
 - [ ] Console access works
