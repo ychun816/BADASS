@@ -11,8 +11,15 @@ sudo apt update
 sudo apt upgrade -y
 
 echo "Installing required dependencies..."
-sudo apt install -y software-properties-common python3-pyqt5 python3-pyqt5.qtsvg python3-pip python3-setuptools python3-dev \
-    python3-wheel python3-pyqt5.qtwebsockets git wget curl net-tools
+sudo apt install -y software-properties-common python3-pyqt5 python3-pyqt5.qtsvg python3-setuptools python3-dev \
+    python3-pyqt5.qtwebsockets git wget curl net-tools
+
+# Note: python3-pip and python3-wheel are not installed system-wide to avoid PEP 668 issues on Debian 12/13.
+# If you need to install Python packages not available via apt, use pipx or a virtual environment:
+# sudo apt install -y pipx
+# pipx install <package>
+# or
+# python3 -m venv ~/myvenv && source ~/myvenv/bin/activate && pip install <package>
 
 echo "Installing GNS3 GUI and Server..."
 sudo apt install -y gns3-gui gns3-server
