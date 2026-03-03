@@ -162,3 +162,35 @@ exported_project.zip
 - [ ] Routes propagate correctly
 - [ ] Connectivity fully functional
 - [ ] Project clean and documented
+
+---
+
+# P2 | Discovering a VXLAN Checklist
+
+## 1️⃣ General Requirements
+- [ ] Project rendered in a `/P2` folder at the root of the git repository.
+- [ ] Equipment names correctly include the login of one of the group members (e.g., `router_yilin`).
+- [ ] Base images are included in the ZIP export.
+- [ ] Zip export is visible in the Git repository.
+
+## 2️⃣ Static Setup
+- [ ] VXLAN network configured in static mode.
+- [ ] VXLAN ID set to `10`.
+- [ ] VXLAN interface named `vxlan10`.
+- [ ] Bridge configured named `br0`.
+- [ ] Ethernet interfaces correctly assigned/configured.
+
+## 3️⃣ Dynamic Multicast Setup
+- [ ] VXLAN network configured in dynamic multicast mode.
+- [ ] VXLAN ID set to `10` with bridge `br0` and interface `vxlan10`.
+- [ ] Multicast group correctly configured (e.g., `239.1.1.1` or modified custom group).
+- [ ] Multicast group assignment verified on machines.
+- [ ] MAC address tables correctly populated across routers.
+
+## 4️⃣ Testing & Traffic
+- [ ] Traffic visualization/inspection confirms communication between the two machines in the VXLAN.
+- [ ] Ping/Connectivity operational across the VXLAN in both static and dynamic stages.
+
+## 5️⃣ Configuration & Documentation
+- [ ] Configuration files provided for each equipment.
+- [ ] Comments included in configuration files explaining the purpose of each setup block.

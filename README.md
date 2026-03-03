@@ -11,7 +11,9 @@ VPN and in this case, EVPN).
 ---
 
 # index 
-
+- P1
+- P2
+- P3 
 
 
 ---
@@ -55,5 +57,28 @@ BADASS/
 
 ---
 
+# P2 | VXLAN
 
-# P2 
+## P2 structure 
+```bash
+P2/
+├── configs/
+│   ├── static_mode/
+│   │   ├── router_yilin1.conf
+│   │   ├── router_yilin2.conf
+│   │   ├── host_yilin1.conf
+│   │   └── host_yilin2.conf
+│   │
+│   └── dynamic_multicast/
+│       ├── router_yilin1.conf
+│       ├── router_yilin2.conf
+│       ├── host_yilin1.conf
+│       └── host_yilin2.conf
+│
+├── P2_exported_project_static.zip
+└── P2_exported_project_dynamic.zip
+```
+
+---
+
+# P3
