@@ -14,12 +14,16 @@ echo "Installing required dependencies..."
 sudo apt install -y software-properties-common python3-pyqt5 python3-pyqt5.qtsvg python3-setuptools python3-dev \
     python3-pyqt5.qtwebsockets git wget curl net-tools
 
-# Note: python3-pip and python3-wheel are not installed system-wide to avoid PEP 668 issues on Debian 12/13.
-# If you need to install Python packages not available via apt, use pipx or a virtual environment:
-# sudo apt install -y pipx
-# pipx install <package>
-# or
-# python3 -m venv ~/myvenv && source ~/myvenv/bin/activate && pip install <package>
+
+# Add GNS3 official repository and GPG key
+echo "Adding GNS3 official repository..."
+sudo add-apt-repository ppa:gns3/ppa -y || {
+    echo "PPA not available, adding manually."
+    sudo apt install -y lsb-release
+    echo "deb https://ppa.launchpadcontent.net/gns3/ppa/ubuntu $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gns3.list
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F8B239C15DE3D5F6
+}
+sudo apt update
 
 echo "Installing GNS3 GUI and Server..."
 sudo apt install -y gns3-gui gns3-server
