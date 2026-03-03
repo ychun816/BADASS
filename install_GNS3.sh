@@ -12,7 +12,7 @@ sudo apt upgrade -y
 
 echo "Installing required dependencies..."
 sudo apt install -y python3 python3-pip pipx python3-pyqt5 python3-pyqt5.qtwebsockets python3-pyqt5.qtsvg \
-    qemu-kvm qemu-utils libvirt-clients libvirt-daemon-system virtinst dynamips \
+    qemu-kvm qemu-utils libvirt-clients libvirt-daemon-system virtinst \
     software-properties-common ca-certificates curl gnupg2 git wget net-tools
 
 echo "Installing GNS3 GUI and Server using pipx..."
