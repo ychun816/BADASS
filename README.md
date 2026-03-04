@@ -44,6 +44,9 @@ BADASS/
 │   │   ├── router2.conf
 │   │   └── topology-explanation.md
 │   │
+│   ├── diagrams/
+│   │   └── topology.png
+│   │
 │   ├── gns3-project/
 │   │   ├── project.gns3
 │   │   └── project-files/

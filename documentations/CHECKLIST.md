@@ -5,6 +5,32 @@
 
 # P1 | GNS3 + Docker + Routing Stack Validation Checklist
 
+## ✅ OVERVIEW OF WHAT YOU MUST PRODUCE
+
+### Image 1 – Minimal host
+- [ ] Based on Alpine (recommended)
+- [ ] Must contain busybox (or equivalent)
+- [ ] No IP configured by default
+
+### Image 2 – Routing router
+- [ ] Must include Routing suite (FRRouting recommended instead of old zebra/quagga)
+- [ ] BGP daemon active
+- [ ] OSPF daemon active
+- [ ] IS-IS daemon active
+- [ ] Must contain busybox or equivalent
+- [ ] No IP configured by default
+
+### Project Requirements
+- [ ] Import both images into GNS3
+- [ ] Build a small topology
+- [ ] Be able to access both machines via console
+- [ ] Name devices with your login (example: yilin-router, yilin-host)
+- [ ] Export the project as ZIP including base images
+- [ ] Store everything inside `/P1` at repo root
+
+
+---
+
 ## 0 GNS3 / Docker install in vm
 
 - [x] Install required base system packages
