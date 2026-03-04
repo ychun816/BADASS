@@ -21,6 +21,13 @@ VPN and in this case, EVPN).
 
 # P1 | GNS3 + Docker + Routing Stack
 
+Routing logic decides.
+Kernel forwards.
+
+```
+BGP / OSPF / IS-IS → Zebra → Linux Kernel → Interface → GNS3 link
+
+```
 ## P1 structure
 
 ```bash
