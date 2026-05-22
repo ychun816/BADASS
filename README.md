@@ -1,94 +1,127 @@
-# BADASS (Bgp At Doors of Autonomous Systems is Simple)
+# BADASS — Bgp At Doors of Autonomous Systems is Simple
 
-- simulate a network and configure it using GNS3 with docker images.
-- BGP EVPN is based on BGP (RFC 4271) and its extensions, MP-BGP (RFC 4760).
-- BGP is the routing protocol that drives the Internet. 
-- Through MP-BGP extensions, it can be used to carry reachability information (NLRI) for various protocols (IPv4, IPv6, L3
-VPN and in this case, EVPN). 
-- EVPN is a special family used for publishing information about MAC addresses and the end devices that access them.
-
+Simulate a small data center using GNS3, Docker, VXLAN, and BGP EVPN.
 
 ---
 
-# index 
-- P1
-- P2
-- P3 
+## Index
 
-
----
-
-
-# P1 | GNS3 + Docker + Routing Stack
-
-Routing logic decides.
-Kernel forwards.
-
-```
-BGP / OSPF / IS-IS → Zebra → Linux Kernel → Interface → GNS3 link
-
-```
-## P1 structure
-
-```bash
-BADASS/
-├── P1/
-│   ├── README.md
-│   │
-│   ├── docker-images/
-│   │   ├── host/
-│   │   │   ├── Dockerfile
-│   │   │   └── entrypoint.sh (optional)
-│   │   │
-│   │   └── router/
-│   │       ├── Dockerfile
-│   │       ├── daemons
-│   │       ├── frr.conf
-│   │       └── sysctl.conf (optional)
-│   │
-│   ├── configs/
-│   │   ├── router1.conf
-│   │   ├── router2.conf
-│   │   └── topology-explanation.md
-│   │
-│   ├── diagrams/
-│   │   └── topology.png
-│   │
-│   ├── gns3-project/
-│   │   ├── project.gns3
-│   │   └── project-files/
-│   │
-│   └── exported/
-│       └── P1_portable_project.zip
-│
-└── .gitignore
-```
-
+- [Part 1 — GNS3 + Docker setup](p1_readme.md)
+- [Part 2 — Discovering VXLAN](p2_readme.md)
+- [Part 3 — BGP with EVPN](p3_readme.md)
 
 ---
 
-# P2 | VXLAN
+## Part 1 — GNS3 configuration with Docker
 
-## P2 structure 
-```bash
+**Concepts to learn:**
+- Docker: `FROM`, `RUN`, `CMD`, `ENTRYPOINT` — build two images from scratch
+- **FRR** (Free Range Routing): modern successor to Quagga; bundles `zebra`, `bgpd`, `ospfd`, `isisd` as daemons — `zebra` is the core that programs the Linux kernel routing table, all routing daemons (bgpd, ospfd, isisd) talk to zebra
+- **GNS3**: network emulator that runs Docker containers as nodes connected by virtual links; access each container via its GNS3 console (telnet)
+- Why "no default IP": the same two images are reused across P1 → P2 → P3 — IPs are assigned per-topology at runtime, never baked into the image
+
+**Repo structure:**
+```
+P1/
+├── P1.gns3project              ← ZIP export (File > Export portable project, include base images)
+├── _ychun-1_host               ← commented config explaining host container setup
+└── _ychun-2_routeur            ← commented config explaining router container setup
+
+docker-images/
+├── host/
+│   ├── Dockerfile              ← Image 1: Alpine + busybox
+│   └── entrypoint.sh
+└── router/
+    ├── Dockerfile              ← Image 2: Alpine + FRR
+    ├── daemons                 ← bgpd=yes, ospfd=yes, isisd=yes, zebra=yes
+    ├── frr.conf                ← FRR config skeleton (no IPs)
+    └── sysctl.conf             ← net.ipv4.ip_forward=1
+```
+
+**Workflow:**
+1. Build `host` image: Alpine + `busybox iproute2 iputils bash`
+2. Build `router` image: Alpine + FRR, copy `daemons` file enabling all four services
+3. Import both Docker images into GNS3 as Docker appliances (no persistent IP configured)
+4. Build topology: `host_ychun-1` ↔ `routeur_ychun`
+5. Start both nodes, verify with `ps` — expect `zebra`, `bgpd`, `ospfd`, `isisd` running in the router
+6. Export: GNS3 → File → Export portable project → ZIP with base images → `P1.gns3project`
+
+---
+
+## Part 2 — Discovering a VXLAN
+
+**Concepts to learn:**
+- **VXLAN** (RFC 7348): tunnels L2 Ethernet frames over UDP port 4789 — lets machines on different physical segments act as if on the same LAN
+- **VNI** (VXLAN Network Identifier): the "VLAN ID" of the overlay network — use `10` throughout this project
+- **VTEP** (VXLAN Tunnel Endpoint): the router interface that encapsulates outgoing frames into VXLAN-UDP and decapsulates incoming ones
+- **Bridge `br0`**: a software L2 switch — attach both the physical `eth` and `vxlan10` to it so traffic forwards between real hosts and the tunnel
+- **Static mode**: each VTEP hard-codes the remote VTEP IP (`remote <peer_ip>`) — simple, no multicast needed
+- **Dynamic multicast mode**: VTEPs join a multicast group (e.g. `239.1.1.1`) and flood BUM (Broadcast/Unknown/Multicast) traffic to the group instead of manual peer config
+
+**Repo structure:**
+```
 P2/
-├── configs/
-│   ├── static_mode/
-│   │   ├── router_yilin1.conf
-│   │   ├── router_yilin2.conf
-│   │   ├── host_yilin1.conf
-│   │   └── host_yilin2.conf
-│   │
-│   └── dynamic_multicast/
-│       ├── router_yilin1.conf
-│       ├── router_yilin2.conf
-│       ├── host_yilin1.conf
-│       └── host_yilin2.conf
-│
-├── P2_exported_project_static.zip
-└── P2_exported_project_dynamic.zip
+├── P2.gns3project
+├── _ychun-1_host
+├── _ychun-1_s                  ← static VXLAN config for routeur_ychun-1
+├── _ychun-1_g                  ← multicast VXLAN config for routeur_ychun-1
+├── _ychun-2_host
+├── _ychun-2_s
+└── _ychun-2_g
 ```
+
+**Workflow:**
+1. Topology: `Switch_ychun` ↔ `routeur_ychun-1` + `routeur_ychun-2`, each router ↔ one host
+2. Assign IPs to router `eth0` interfaces (e.g. `30.1.1.1/24`, `30.1.1.2/24`)
+3. **Static VXLAN** on each router:
+   ```sh
+   ip link add vxlan10 type vxlan id 10 remote <peer_eth0_ip> dstport 4789 dev eth0
+   ip link add br0 type bridge
+   ip link set vxlan10 master br0 && ip link set eth1 master br0
+   ip link set vxlan10 up && ip link set br0 up
+   ```
+4. **Multicast VXLAN**: replace `remote <ip>` with `group 239.1.1.1 dev eth0` — both VTEPs join the same group
+5. Verify: `brctl showmacs br0` shows learned MACs; hosts ping each other across the tunnel
+6. Capture in Wireshark — confirm VXLAN header with VNI=10 wrapping the inner Ethernet frame
+7. Export as `P2.gns3project`
 
 ---
 
-# P3
+## Part 3 — BGP with EVPN
+
+**Concepts to learn:**
+- **BGP EVPN** (RFC 7432): uses BGP as the control plane for VXLAN — replaces static/multicast VTEP discovery with BGP route advertisements; MACs are learned automatically without flooding
+- **Route Reflector (RR)**: a central BGP peer that re-advertises routes to all clients — avoids a full iBGP mesh; leaves only peer with the RR
+- **Leaves / VTEPs**: edge routers connecting hosts to the overlay; advertise their MAC/IP bindings via BGP EVPN and receive peers' bindings automatically
+- **OSPF as underlay**: routes loopback IPs (`1.1.1.x/32`) between all routers so BGP sessions use stable loopback addresses, independent of physical link IPs
+- **EVPN route types**:
+  - **Type 2** (MAC/IP Advertisement): auto-generated when a host becomes active — signals "this MAC lives behind my VTEP"
+  - **Type 3** (IMET / Inclusive Multicast): pre-configured per VTEP — announces "I handle VNI 10, send BUM traffic here"
+- **`address-family l2vpn evpn`**: the BGP sub-family where EVPN routes are activated; `advertise-all-vni` on leaves tells FRR to auto-generate type-3 routes for all local VNIs
+
+**Repo structure:**
+```
+P3/
+├── P3.gns3project
+├── _ychun-1                    ← RR: OSPF + BGP route-reflector config
+├── _ychun-2                    ← Leaf: OSPF + BGP + VXLAN + bridge config
+├── _ychun-2_host
+├── _ychun-3
+├── _ychun-3_host
+├── _ychun-4
+└── _ychun-4_host
+```
+
+**Workflow:**
+1. Topology: `_ychun-1` (RR) with 3 links to leaves `_ychun-2`, `_ychun-3`, `_ychun-4`; each leaf connects one host
+2. **OSPF underlay** on all routers: advertise loopback (`1.1.1.x/32`) + point-to-point links → all routers learn all loopbacks
+3. **BGP on RR** (`_ychun-1`, router-id `1.1.1.1`, AS 1):
+   - Peer with each leaf loopback, `update-source lo`, `route-reflector-client`
+   - `address-family l2vpn evpn` → `neighbor X activate`, `route-reflector-client`
+4. **BGP on leaves** (router-id `1.1.1.x`, AS 1):
+   - Peer with RR loopback only, `update-source lo`
+   - `address-family l2vpn evpn` → `neighbor RR activate`, `advertise-all-vni`
+5. **VXLAN on each leaf**: `ip link add vxlan10 type vxlan id 10 dstport 4789 local 1.1.1.x` (no `remote` — BGP handles discovery), attach to `br0` with local host-facing `eth`
+6. Start hosts — verify `show bgp l2vpn evpn`: type-3 routes appear (one per VTEP); type-2 routes appear as hosts send traffic
+7. Ping between hosts on different VTEPs — Wireshark confirms VXLAN VNI=10 + ICMP + OSPF Hello packets
+8. Export as `P3.gns3project` 

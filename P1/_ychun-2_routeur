@@ -1,0 +1,29 @@
+# routeur_ychun
+# Image: ychun_router (built from docker-images/router/Dockerfile)
+# Base OS: Alpine Linux
+# Adapters: 2 (eth0, eth1)
+#
+# Installed packages:
+#   frr       - Free Range Routing suite (zebra, bgpd, ospfd, isisd)
+#   busybox   - basic Unix tools
+#   iproute2  - ip addr, ip route, ip link commands
+#   bash      - interactive shell
+#
+# FRR daemons enabled (see daemons file):
+#   zebra  - core daemon, programs Linux kernel routing table via Netlink
+#   bgpd   - BGP daemon (used in P3 for EVPN route distribution)
+#   ospfd  - OSPF daemon (used in P3 as underlay routing protocol)
+#   isisd  - IS-IS daemon (required by subject)
+#
+# Startup: /usr/lib/frr/docker-start reads /etc/frr/daemons and
+#          starts the enabled daemons, then keeps the container running.
+#
+# Kernel settings (sysctl.conf):
+#   net.ipv4.ip_forward=1  - enables packet forwarding between interfaces
+#                            (required for routing — disabled by default on Linux)
+#
+# No IP address is configured by default.
+# IPs are assigned per topology using: ip addr add <ip>/<prefix> dev <interface>
+#
+# To enter FRR config shell inside GNS3 console:
+#   vtysh

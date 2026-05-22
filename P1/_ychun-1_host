@@ -1,0 +1,16 @@
+# host_ychun-1
+# Image: ychun_host (built from docker-images/host/Dockerfile)
+# Base OS: Alpine Linux
+# Adapters: 1 (eth0)
+#
+# Installed packages:
+#   busybox   - provides sh, ping, ifconfig, and other basic Unix tools
+#   iproute2  - provides ip addr, ip route, ip link commands
+#   iputils   - provides ping
+#   bash      - interactive shell
+#
+# No IP address is configured by default.
+# IP is assigned manually per topology when running in GNS3.
+#
+# Purpose in P1: simulates an end-host connected to the router.
+# Purpose in P2/P3: same image reused as hosts behind VTEP routers.
