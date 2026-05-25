@@ -29,18 +29,18 @@ P1/
 
 docker-images/
 ├── host/
-│   ├── Dockerfile              ← Image 1: Alpine + busybox
+│   ├── Dockerfile              ← Image 1: Debian 13 trixie + busybox
 │   └── entrypoint.sh
 └── router/
-    ├── Dockerfile              ← Image 2: Alpine + FRR
+   ├── Dockerfile              ← Image 2: Debian 13 trixie + FRR
     ├── daemons                 ← bgpd=yes, ospfd=yes, isisd=yes, zebra=yes
     ├── frr.conf                ← FRR config skeleton (no IPs)
     └── sysctl.conf             ← net.ipv4.ip_forward=1
 ```
 
 **Workflow:**
-1. Build `host` image: Alpine + `busybox iproute2 iputils bash`
-2. Build `router` image: Alpine + FRR, copy `daemons` file enabling all four services
+1. Build `host` image: Debian 13 trixie + `busybox iproute2 iputils-ping bash`
+2. Build `router` image: Debian 13 trixie + FRR, copy `daemons` file enabling all four services
 3. Import both Docker images into GNS3 as Docker appliances (no persistent IP configured)
 4. Build topology: `host_ychun-1` ↔ `routeur_ychun`
 5. Start both nodes, verify with `ps` — expect `zebra`, `bgpd`, `ospfd`, `isisd` running in the router
@@ -95,6 +95,8 @@ P2/
 - **Leaves / VTEPs**: edge routers connecting hosts to the overlay; advertise their MAC/IP bindings via BGP EVPN and receive peers' bindings automatically
 - **OSPF as underlay**: routes loopback IPs (`1.1.1.x/32`) between all routers so BGP sessions use stable loopback addresses, independent of physical link IPs
 - **EVPN route types**:
+1. Topology: `_ychun-1` (RR) with 3 links to leaves `_ychun-2`, `_ychun-3`, `_ychun-4`; each leaf connects one host
+2. **OSPF underlay** on all routers: advertise loopback (`1.1.1.x/32`) + point-to-point links → all routers learn all loopbacks
   - **Type 2** (MAC/IP Advertisement): auto-generated when a host becomes active — signals "this MAC lives behind my VTEP"
   - **Type 3** (IMET / Inclusive Multicast): pre-configured per VTEP — announces "I handle VNI 10, send BUM traffic here"
 - **`address-family l2vpn evpn`**: the BGP sub-family where EVPN routes are activated; `advertise-all-vni` on leaves tells FRR to auto-generate type-3 routes for all local VNIs
@@ -125,3 +127,76 @@ P3/
 6. Start hosts — verify `show bgp l2vpn evpn`: type-3 routes appear (one per VTEP); type-2 routes appear as hosts send traffic
 7. Ping between hosts on different VTEPs — Wireshark confirms VXLAN VNI=10 + ICMP + OSPF Hello packets
 8. Export as `P3.gns3project` 
+
+---
+
+## install commands 
+
+1. Install Docker on Debian 13
+
+```bash
+sudo apt update
+sudo apt install -y docker.io docker-buildx-plugin docker-compose-plugin
+sudo systemctl enable --now docker
+sudo usermod -aG docker "$USER"
+newgrp docker
+
+#verify
+docker --version
+sudo systemctl status docker --no-pager
+docker ps
+docker run --rm hello-world
+
+```
+
+2. Install GNS3 on Debian 13
+```bash
+sudo apt update
+sudo apt install -y python3-pip python3-venv pipx
+pipx ensurepath
+pipx install gns3-gui
+pipx install gns3-server
+
+
+
+#verify
+which gns3-gui
+which gns3server
+gns3-gui --version
+gns3server --version
+pipx list | grep -i gns3
+```
+
+3. Build the P1 Docker images inside the VM
+Host image:
+
+```
+cd /home/yilin/GITHUB/badass/P1/docker-images/host
+docker build -t ychun-host:trixie .
+```
+Router image:
+```
+cd /home/yilin/GITHUB/badass/P1/docker-images/router
+docker build -t ychun-router:trixie .
+```
+
+4. Check that the images exist
+```
+docker images | grep ychun
+```
+
+5. Open GNS3 and import the images
+6. Create the topology
+- `yilin-host`
+- `yilin-router`
+
+7. Verify inside the containers
+```bash
+# host
+ip addr
+# router
+ps -ef | grep -E 'zebra|bgpd|ospfd|isisd'
+vtysh -c "show running-config"
+```
+
+8. Export the portable project

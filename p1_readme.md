@@ -7,8 +7,8 @@
 ## Goal
 
 Build two Docker images and wire them together in a GNS3 topology:
-- **Image 1 (host)**: lightweight Alpine + busybox — simulates an end-host
-- **Image 2 (router)**: Alpine + FRR with bgpd, ospfd, isisd, zebra active — simulates a full routing stack
+- **Image 1 (host)**: lightweight Debian 13 trixie + busybox — simulates an end-host
+- **Image 2 (router)**: Debian 13 trixie + FRR with bgpd, ospfd, isisd, zebra active — simulates a full routing stack
 
 Both images must have **no IP configured by default** — they will be reused in P2 and P3.
 
@@ -45,15 +45,15 @@ isisd ─┘
 
 ### `docker-images/host/Dockerfile`
 ```dockerfile
-FROM alpine:latest
-RUN apk update && apk add --no-cache busybox iproute2 iputils bash
-CMD ["sh"]
+FROM debian:trixie-slim
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends busybox iproute2 iputils-ping bash && rm -rf /var/lib/apt/lists/*
+CMD ["/bin/bash"]
 ```
 
 ### `docker-images/router/Dockerfile`
 ```dockerfile
-FROM alpine:latest
-RUN apk update && apk add --no-cache frr busybox iproute2 bash
+FROM debian:trixie-slim
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends frr busybox iproute2 iputils-ping bash && rm -rf /var/lib/apt/lists/*
 COPY daemons /etc/frr/daemons
 COPY frr.conf /etc/frr/frr.conf
 COPY sysctl.conf /etc/sysctl.d/99-frr.conf
@@ -109,6 +109,19 @@ net.ipv4.ip_forward=1
 
 ---
 
+## Naming convention
+
+Always include your login in equipment names. Replace the example `ychun` with your login `yilin`.
+
+Examples:
+
+- Host: `host_yilin`
+- Router: `router_yilin`
+
+Make sure the node names in GNS3 and the descriptive files in `P1/` use your login so evaluators
+can identify ownership.
+
+
 ## Export
 
 GNS3 → File → **Export portable project**
@@ -124,7 +137,7 @@ GNS3 → File → **Export portable project**
 
 Example `_ychun-1_host`:
 ```sh
-# host_ychun-1 — Alpine busybox host
+# host_ychun-1 — Debian 13 trixie busybox host
 # Image: ychun_host (docker-images/host/Dockerfile)
 # Adapters: 1 (eth0)
 # No IP configured — assigned manually per topology

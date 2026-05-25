@@ -1,6 +1,11 @@
-#alpine is suggested
-FROM alpine:latest
+FROM debian:trixie-slim
 
-RUN apk update && apk add --no-cache busybox iproute2 iputils bash
+RUN apt-get update \
+	&& DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+		busybox \
+		iproute2 \
+		iputils-ping \
+		bash \
+	&& rm -rf /var/lib/apt/lists/*
 
-CMD ["sh"]
+CMD ["/bin/bash"]

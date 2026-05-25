@@ -1,0 +1,15 @@
+# host_yilin — Host container usage notes
+# Image: yilin-host (P1/docker-images/host/Dockerfile)
+# Adapters: 1 (eth0)
+# Console: telnet (open from GNS3)
+# Important: Do NOT configure any IP addresses inside the image by default.
+# When you build topologies in GNS3, assign IPs per-topology. Example runtime steps:
+#
+#   # start node in GNS3, open console
+#   ip addr           # verifies eth0 exists, no IP by default
+#   ip addr add 192.0.2.1/24 dev eth0
+#   ip link set eth0 up
+#   ping 192.0.2.2    # test ping to router
+#
+# Host node naming convention: use your login in the node name.
+# Example: `host_yilin` (where `yilin` is your login).
