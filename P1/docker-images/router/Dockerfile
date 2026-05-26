@@ -1,13 +1,9 @@
-FROM debian:trixie-slim
+FROM alpine:3.19
 
-RUN apt-get update \
-	&& DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-		frr \
-		busybox \
-		iproute2 \
-		iputils-ping \
-		bash \
-	&& rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache \
+	frr \
+	iproute2 \
+	bash
 
 COPY daemons /etc/frr/daemons
 COPY frr.conf /etc/frr/frr.conf

@@ -1,11 +1,11 @@
-FROM debian:trixie-slim
+FROM alpine:3.19
 
-RUN apt-get update \
-	&& DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-		busybox \
-		iproute2 \
-		iputils-ping \
-		bash \
-	&& rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache \
+	iproute2 \
+	bash
 
-CMD ["/bin/bash"]
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["/bin/sh"]

@@ -29,8 +29,7 @@ P1/
 
 docker-images/
 ├── host/
-│   ├── Dockerfile              ← Image 1: Debian 13 trixie + busybox
-│   └── entrypoint.sh
+│   └── Dockerfile              ← Image 1: Debian 13 trixie + busybox
 └── router/
    ├── Dockerfile              ← Image 2: Debian 13 trixie + FRR
     ├── daemons                 ← bgpd=yes, ospfd=yes, isisd=yes, zebra=yes
