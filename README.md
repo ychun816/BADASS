@@ -24,24 +24,27 @@ Simulate a small data center using GNS3, Docker, VXLAN, and BGP EVPN.
 ```
 P1/
 ├── P1.gns3project              ← ZIP export (File > Export portable project, include base images)
-├── _ychun-1_host               ← commented config explaining host container setup
-└── _ychun-2_routeur            ← commented config explaining router container setup
-
-docker-images/
-├── host/
-│   └── Dockerfile              ← Image 1: Debian 13 trixie + busybox
-└── router/
-   ├── Dockerfile              ← Image 2: Debian 13 trixie + FRR
-    ├── daemons                 ← bgpd=yes, ospfd=yes, isisd=yes, zebra=yes
-    ├── frr.conf                ← FRR config skeleton (no IPs)
-    └── sysctl.conf             ← net.ipv4.ip_forward=1
+├── _yilin-host                 ← commented config explaining host container setup
+├── _yilin-router               ← commented config explaining router container setup
+├── configs/
+│   ├── router1.conf            ← runtime notes for router_yilin (no IPs)
+│   └── router2.conf            ← runtime notes for second router (no IPs)
+└── docker-images/
+    ├── host/
+    │   ├── Dockerfile          ← Image 1: Alpine 3.19 + busybox (built-in) + iproute2 + bash
+    │   └── entrypoint.sh       ← keeps container alive for GNS3 console
+    └── router/
+        ├── Dockerfile          ← Image 2: Alpine 3.19 + FRR + iproute2 + bash
+        ├── daemons             ← bgpd=yes, ospfd=yes, isisd=yes, zebra=yes
+        ├── frr.conf            ← FRR config skeleton (hostname router_yilin, no IPs)
+        └── sysctl.conf         ← net.ipv4.ip_forward=1
 ```
 
 **Workflow:**
-1. Build `host` image: Debian 13 trixie + `busybox iproute2 iputils-ping bash`
-2. Build `router` image: Debian 13 trixie + FRR, copy `daemons` file enabling all four services
+1. Build `host` image: Alpine 3.19 + `iproute2 bash` (busybox is built into Alpine)
+2. Build `router` image: Alpine 3.19 + FRR, copy `daemons` file enabling all four services
 3. Import both Docker images into GNS3 as Docker appliances (no persistent IP configured)
-4. Build topology: `host_ychun-1` ↔ `routeur_ychun`
+4. Build topology: `host_yilin` ↔ `router_yilin`
 5. Start both nodes, verify with `ps` — expect `zebra`, `bgpd`, `ospfd`, `isisd` running in the router
 6. Export: GNS3 → File → Export portable project → ZIP with base images → `P1.gns3project`
 
@@ -61,16 +64,16 @@ docker-images/
 ```
 P2/
 ├── P2.gns3project
-├── _ychun-1_host
-├── _ychun-1_s                  ← static VXLAN config for routeur_ychun-1
-├── _ychun-1_g                  ← multicast VXLAN config for routeur_ychun-1
-├── _ychun-2_host
-├── _ychun-2_s
-└── _ychun-2_g
+├── _yilin-1_host
+├── _yilin-1_s                  ← static VXLAN config for router_yilin-1
+├── _yilin-1_g                  ← multicast VXLAN config for router_yilin-1
+├── _yilin-2_host
+├── _yilin-2_s
+└── _yilin-2_g
 ```
 
 **Workflow:**
-1. Topology: `Switch_ychun` ↔ `routeur_ychun-1` + `routeur_ychun-2`, each router ↔ one host
+1. Topology: `Switch_yilin` ↔ `router_yilin-1` + `router_yilin-2`, each router ↔ one host
 2. Assign IPs to router `eth0` interfaces (e.g. `30.1.1.1/24`, `30.1.1.2/24`)
 3. **Static VXLAN** on each router:
    ```sh
@@ -94,7 +97,7 @@ P2/
 - **Leaves / VTEPs**: edge routers connecting hosts to the overlay; advertise their MAC/IP bindings via BGP EVPN and receive peers' bindings automatically
 - **OSPF as underlay**: routes loopback IPs (`1.1.1.x/32`) between all routers so BGP sessions use stable loopback addresses, independent of physical link IPs
 - **EVPN route types**:
-1. Topology: `_ychun-1` (RR) with 3 links to leaves `_ychun-2`, `_ychun-3`, `_ychun-4`; each leaf connects one host
+1. Topology: `_yilin-1` (RR) with 3 links to leaves `_yilin-2`, `_yilin-3`, `_yilin-4`; each leaf connects one host
 2. **OSPF underlay** on all routers: advertise loopback (`1.1.1.x/32`) + point-to-point links → all routers learn all loopbacks
   - **Type 2** (MAC/IP Advertisement): auto-generated when a host becomes active — signals "this MAC lives behind my VTEP"
   - **Type 3** (IMET / Inclusive Multicast): pre-configured per VTEP — announces "I handle VNI 10, send BUM traffic here"
@@ -104,19 +107,19 @@ P2/
 ```
 P3/
 ├── P3.gns3project
-├── _ychun-1                    ← RR: OSPF + BGP route-reflector config
-├── _ychun-2                    ← Leaf: OSPF + BGP + VXLAN + bridge config
-├── _ychun-2_host
-├── _ychun-3
-├── _ychun-3_host
-├── _ychun-4
-└── _ychun-4_host
+├── _yilin-1                    ← RR: OSPF + BGP route-reflector config
+├── _yilin-2                    ← Leaf: OSPF + BGP + VXLAN + bridge config
+├── _yilin-2_host
+├── _yilin-3
+├── _yilin-3_host
+├── _yilin-4
+└── _yilin-4_host
 ```
 
 **Workflow:**
-1. Topology: `_ychun-1` (RR) with 3 links to leaves `_ychun-2`, `_ychun-3`, `_ychun-4`; each leaf connects one host
+1. Topology: `_yilin-1` (RR) with 3 links to leaves `_yilin-2`, `_yilin-3`, `_yilin-4`; each leaf connects one host
 2. **OSPF underlay** on all routers: advertise loopback (`1.1.1.x/32`) + point-to-point links → all routers learn all loopbacks
-3. **BGP on RR** (`_ychun-1`, router-id `1.1.1.1`, AS 1):
+3. **BGP on RR** (`_yilin-1`, router-id `1.1.1.1`, AS 1):
    - Peer with each leaf loopback, `update-source lo`, `route-reflector-client`
    - `address-family l2vpn evpn` → `neighbor X activate`, `route-reflector-client`
 4. **BGP on leaves** (router-id `1.1.1.x`, AS 1):
@@ -125,7 +128,7 @@ P3/
 5. **VXLAN on each leaf**: `ip link add vxlan10 type vxlan id 10 dstport 4789 local 1.1.1.x` (no `remote` — BGP handles discovery), attach to `br0` with local host-facing `eth`
 6. Start hosts — verify `show bgp l2vpn evpn`: type-3 routes appear (one per VTEP); type-2 routes appear as hosts send traffic
 7. Ping between hosts on different VTEPs — Wireshark confirms VXLAN VNI=10 + ICMP + OSPF Hello packets
-8. Export as `P3.gns3project` 
+8. Export as `P3.gns3project`
 
 ---
 
@@ -171,23 +174,23 @@ Host image:
 
 ```
 cd /home/yilin/GITHUB/badass/P1/docker-images/host
-docker build -t ychun-host:trixie .
+docker build -t yilin-host:alpine .
 ```
 Router image:
 ```
 cd /home/yilin/GITHUB/badass/P1/docker-images/router
-docker build -t ychun-router:trixie .
+docker build -t yilin-router:alpine .
 ```
 
 4. Check that the images exist
 ```
-docker images | grep ychun
+docker images | grep yilin
 ```
 
 5. Open GNS3 and import the images
 6. Create the topology
-- `yilin-host`
-- `yilin-router`
+- `host_yilin`
+- `router_yilin`
 
 7. Verify inside the containers
 ```bash
