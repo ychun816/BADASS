@@ -1,68 +1,68 @@
 # Checklist
 
-
 ---
 
-# P1 | GNS3 + Docker + Routing Stack Validation Checklist
+# P1 | GNS3 + Docker + Routing Stack
 
-## ✅ OVERVIEW OF WHAT YOU MUST PRODUCE
+## What you must produce
 
-### Image 1 – Minimal host
-- [ ] Based on Alpine (recommended)
-- [ ] Must contain busybox (or equivalent)
+### Image 1 – Host
+- [ ] Use `docker pull alpine:latest` — no custom Dockerfile
 - [ ] No IP configured by default
+- [ ] Shell accessible from GNS3 console
 
-### Image 2 – Routing router
-- [ ] Must include Routing suite (FRRouting recommended instead of old zebra/quagga)
-- [ ] BGP daemon active
-- [ ] OSPF daemon active
-- [ ] IS-IS daemon active
-- [ ] Must contain busybox or equivalent
+### Image 2 – Router
+- [ ] Based on `alpine:latest` with FRR installed
+- [ ] bgpd active
+- [ ] ospfd active
+- [ ] isisd active
+- [ ] staticd active
+- [ ] zebra active
 - [ ] No IP configured by default
+- [ ] vxlan-unicast.sh and vxlan-multicast.sh present in image (for P2)
 
 ### Project Requirements
-- [ ] Import both images into GNS3
-- [ ] Build a small topology
-- [ ] Be able to access both machines via console
-- [ ] Name devices with your login (example: yilin-router, yilin-host)
-- [ ] Export the project as ZIP including base images
-- [ ] Store everything inside `/P1` at repo root
-
+- [ ] Both images imported into GNS3
+- [ ] Topology built: `host_yilin` ↔ `router_yilin`
+- [ ] Console accessible for both nodes
+- [ ] Node names include login (e.g., `router_yilin`, `host_yilin`)
+- [ ] GNS3 project exported as ZIP including base images (`P1.gns3project`)
+- [ ] `P1/host` and `P1/router` config files present and commented
 
 ---
 
-## 0 GNS3 / Docker install in vm
+## 0 | GNS3 / Docker install in VM
 
 - [x] Install required base system packages
 - [x] Install Docker Engine and enable service
 - [x] Install GNS3 GUI and Server via `pipx`
 - [x] Add user to relevant groups (`docker`, `libvirt`, `kvm`, `wireshark`, `ubridge`)
-- [x] root succesfully installed with ssh, docker, gns3
-- [x] user installed with ssh,docker, gns3
-> check ssh status 
+- [x] root successfully installed with ssh, docker, gns3
+- [x] user installed with ssh, docker, gns3
+
+> Check SSH status
 ```bash
 systemctl status ssh || systemctl status sshd
 whoami
 ```
-> copy ssh frm root to user(yilin) -> use same ssh 
+
+> Copy SSH from root to user
 ```bash
-# in user
 sudo cp -r /root/.ssh/ /home/yilin/
 sudo chown -R yilin:yilin /home/yilin/.ssh/
 ```
 
+---
 
-## 1️⃣ Environment Validation
+## 1 | Environment Validation
 
 ### Docker
-
 - [x] `docker ps` runs without error
 - [ ] `docker build` works successfully
 - [ ] Container starts without crashing
 - [x] No permission issues
 
 ### GNS3
-
 - [x] GNS3 GUI connects to local server
 - [ ] Docker integration enabled in Preferences
 - [ ] Docker template can be created
@@ -70,42 +70,43 @@ sudo chown -R yilin:yilin /home/yilin/.ssh/
 
 ---
 
-## 2️⃣ Image #1 – Minimal Host (Alpine + Busybox)
+## 2 | Image 1 – Host (`alpine:latest`)
 
-###  Build
+### Setup
+- [ ] `docker pull alpine:latest` succeeds
+- [ ] Image added to GNS3 as Docker appliance (1 adapter, telnet console)
 
-- [ ] Image builds successfully
-- [ ] Container starts correctly
-- [ ] Shell accessible from GNS3
-
-###  Runtime Behavior
-
-- [ ] No IP address configured in Dockerfile
-- [ ] No startup script assigns IP
-- [ ] `ip addr` shows interface from GNS3
-- [ ] IP can be manually assigned
+### Runtime
+- [ ] No IP address assigned by default
+- [ ] `ip addr` shows interface with no IP
+- [ ] IP can be manually assigned: `ip addr add X.X.X.X/24 dev eth0`
 - [ ] Can ping connected neighbor
 
 ---
 
-## 3️⃣ Image #2 – Routing Container (FRRouting)
+## 3 | Image 2 – Router (`yilin-router`)
 
-### # Services Running
+### Build
+- [ ] `docker build -t yilin-router P1/docker-images/router/` succeeds
+- [ ] Image added to GNS3 as Docker appliance (2+ adapters, telnet console)
 
-- [ ] zebra is running
-- [ ] bgpd is running
-- [ ] ospfd is running
-- [ ] isisd is running
+### Services running
+- [ ] `zebra` is running
+- [ ] `bgpd` is running
+- [ ] `ospfd` is running
+- [ ] `isisd` is running
+- [ ] `staticd` is running
 - [ ] `vtysh` works
 - [ ] No daemon crashes
 
-###  Kernel Forwarding
-
-- [ ] `net.ipv4.ip_forward = 1`
+### Runtime
+- [ ] No IP address assigned by default
+- [ ] `ip addr` shows interfaces with no IP
+- [ ] `sysctl net.ipv4.ip_forward` returns `1`
 
 ---
 
-## 4️⃣ BGP Validation
+## 4 | BGP Validation
 
 - [ ] `show ip bgp summary` shows neighbor
 - [ ] State = Established
@@ -115,16 +116,16 @@ sudo chown -R yilin:yilin /home/yilin/.ssh/
 
 ---
 
-## 5️⃣ OSPF Validation
+## 5 | OSPF Validation
 
 - [ ] `show ip ospf neighbor` shows adjacency
 - [ ] State = Full
 - [ ] Routes learned via OSPF
 - [ ] Routes appear in routing table
 
----✅ P1 – Step
+---
 
-## 6️⃣ IS-IS Validation
+## 6 | IS-IS Validation
 
 - [ ] `show isis neighbor` shows adjacency
 - [ ] Correct level (L1/L2) configured
@@ -132,26 +133,26 @@ sudo chown -R yilin:yilin /home/yilin/.ssh/
 
 ---
 
-## 7️⃣ Routing Table Verification
+## 7 | Routing Table Verification
 
 - [ ] `ip route` shows learned routes
-- [ ] Not only directly connected rou✅ P1 – Steptes
+- [ ] Not only directly connected routes
 - [ ] BGP / OSPF / IS-IS routes visible
 - [ ] Forwarding works between networks
 
 ---
 
-## 8️⃣ GNS3 Topology
+## 8 | GNS3 Topology
 
-- [ ] Two custom Docker images used
-- [ ] Equipment names include login
+- [ ] Two Docker images used (alpine host + yilin-router)
+- [ ] Equipment names include login (`host_yilin`, `router_yilin`)
 - [ ] Interfaces connected correctly
 - [ ] Consoles accessible
 - [ ] No default IP inside images
 
 ---
 
-## 9️⃣ Connectivity Tests
+## 9 | Connectivity Tests
 
 - [ ] Host can ping router
 - [ ] Router can ping host
@@ -160,30 +161,26 @@ sudo chown -R yilin:yilin /home/yilin/.ssh/
 
 ---
 
-## 🔟 Repository Structure
-```bash
-/P1
-/docker-host
-/docker-router
-/configs
-project.gns3
-exported_project.zip
+## 10 | Repository Structure
+
+```
+P1/
+├── host        ← commented config for host node (no IPs)
+└── router      ← commented config for router node (no IPs)
 ```
 
-
-- [ ] Dockerfiles included
-- [ ] FRR configuration files included
-- [ ] Configurations are commented
-- [ ] Portable GNS3 project exported
+- [ ] `P1/host` present and commented
+- [ ] `P1/router` present and commented
+- [ ] Portable GNS3 project exported (`P1.gns3project`)
 - [ ] Base images included in ZIP
 - [ ] Everything reproducible on fresh VM
 
 ---
 
-## 🎯 Final Validation
+## Final Validation
 
 - [ ] No hardcoded IP addresses in images
-- [ ] Routing daemons stable
+- [ ] All routing daemons stable (zebra, bgpd, ospfd, isisd, staticd)
 - [ ] Neighbor relationships established
 - [ ] Routes propagate correctly
 - [ ] Connectivity fully functional
@@ -191,32 +188,75 @@ exported_project.zip
 
 ---
 
-# P2 | Discovering a VXLAN Checklist
+# P2 | Discovering a VXLAN
 
-## 1️⃣ General Requirements
-- [ ] Project rendered in a `/P2` folder at the root of the git repository.
-- [ ] Equipment names correctly include the login of one of the group members (e.g., `router_yilin`).
-- [ ] Base images are included in the ZIP export.
-- [ ] Zip export is visible in the Git repository.
+## 1 | General Requirements
+- [ ] Project in `/P2` folder at repo root
+- [ ] Equipment names include login (e.g., `router_yilin`)
+- [ ] Base images included in ZIP export
+- [ ] ZIP export visible in git repository
 
-## 2️⃣ Static Setup
-- [ ] VXLAN network configured in static mode.
-- [ ] VXLAN ID set to `10`.
-- [ ] VXLAN interface named `vxlan10`.
-- [ ] Bridge configured named `br0`.
-- [ ] Ethernet interfaces correctly assigned/configured.
+## 2 | Static VXLAN Setup
+- [ ] VXLAN configured in static (unicast) mode
+- [ ] VXLAN ID = `10`
+- [ ] VXLAN interface named `vxlan10`
+- [ ] Bridge named `br0`
+- [ ] `vxlan10` and host-facing `eth` both attached to `br0`
+- [ ] Remote VTEP IP configured (`remote <peer_ip>`)
 
-## 3️⃣ Dynamic Multicast Setup
-- [ ] VXLAN network configured in dynamic multicast mode.
-- [ ] VXLAN ID set to `10` with bridge `br0` and interface `vxlan10`.
-- [ ] Multicast group correctly configured (e.g., `239.1.1.1` or modified custom group).
-- [ ] Multicast group assignment verified on machines.
-- [ ] MAC address tables correctly populated across routers.
+## 3 | Dynamic Multicast VXLAN Setup
+- [ ] VXLAN configured in multicast mode
+- [ ] VXLAN ID = `10`, bridge `br0`, interface `vxlan10`
+- [ ] Multicast group configured (e.g., `239.1.1.1`)
+- [ ] Both VTEPs joined to same multicast group
+- [ ] MAC address tables correctly populated across routers
 
-## 4️⃣ Testing & Traffic
-- [ ] Traffic visualization/inspection confirms communication between the two machines in the VXLAN.
-- [ ] Ping/Connectivity operational across the VXLAN in both static and dynamic stages.
+## 4 | Testing & Traffic
+- [ ] Ping works between hosts across VXLAN (static mode)
+- [ ] Ping works between hosts across VXLAN (multicast mode)
+- [ ] Wireshark/tcpdump confirms VXLAN header with VNI=10
+- [ ] `brctl showmacs br0` shows learned MACs
 
-## 5️⃣ Configuration & Documentation
-- [ ] Configuration files provided for each equipment.
-- [ ] Comments included in configuration files explaining the purpose of each setup block.
+## 5 | Configuration & Documentation
+- [ ] Config files provided for each node
+- [ ] Comments explain purpose of each setup block
+- [ ] `vxlan-unicast.sh` and `vxlan-multicast.sh` scripts working
+
+---
+
+# P3 | BGP with EVPN
+
+## 1 | General Requirements
+- [ ] Project in `/P3` folder at repo root
+- [ ] Equipment names include login
+- [ ] Base images included in ZIP export
+
+## 2 | OSPF Underlay
+- [ ] OSPF running on all routers (RR + leaves)
+- [ ] Loopback IPs advertised (`1.1.1.x/32`)
+- [ ] All routers learn all loopbacks via OSPF
+- [ ] Point-to-point links advertised
+
+## 3 | BGP Route Reflector (RR)
+- [ ] RR configured (router-id `1.1.1.1`, AS 1)
+- [ ] Peering with each leaf loopback (`update-source lo`)
+- [ ] `route-reflector-client` set for each leaf
+- [ ] `address-family l2vpn evpn` activated for all neighbors
+
+## 4 | BGP Leaves
+- [ ] Each leaf peers with RR loopback only
+- [ ] `update-source lo` configured
+- [ ] `address-family l2vpn evpn` + `advertise-all-vni` configured
+- [ ] Router-id and AS set correctly
+
+## 5 | VXLAN on Leaves
+- [ ] `vxlan10` created with `local 1.1.1.x` (no `remote` — BGP handles discovery)
+- [ ] `vxlan10` and host-facing `eth` attached to `br0`
+- [ ] VNI = 10, dstport = 4789
+
+## 6 | Validation
+- [ ] `show bgp l2vpn evpn` shows Type-3 routes (one per VTEP)
+- [ ] Type-2 routes appear after host traffic
+- [ ] Ping between hosts on different VTEPs works
+- [ ] Wireshark confirms VXLAN VNI=10 + OSPF Hello packets
+- [ ] GNS3 project exported as `P3.gns3project`
