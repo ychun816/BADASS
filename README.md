@@ -5,14 +5,15 @@ Simulate a small data center using GNS3, Docker, VXLAN, and BGP EVPN.
 ---
 
 ## Index
-
-- [Part 1 — GNS3 + Docker setup](p1_readme.md)
-- [Part 2 — Discovering VXLAN](p2_readme.md)
-- [Part 3 — BGP with EVPN](p3_readme.md)
+- [Basics | Key terms & diagrams](documentations/Basics.md)
+- [Part 0 | VM setup](documentations/VM.md)
+- [Part 1 | GNS3 + Docker setup](documentations/P1.md)
+- [Part 2 | Discovering VXLAN](documentations/P2.md)
+- [Part 3 | BGP with EVPN](documentations/P3.md)
 
 ---
 
-## Part 1 — GNS3 configuration with Docker
+## Part 1 | GNS3 configuration with Docker
 
 **Concepts to learn:**
 - Docker: `FROM`, `RUN`, `CMD`, `ENTRYPOINT` — build two images from scratch
@@ -20,37 +21,46 @@ Simulate a small data center using GNS3, Docker, VXLAN, and BGP EVPN.
 - **GNS3**: network emulator that runs Docker containers as nodes connected by virtual links; access each container via its GNS3 console (telnet)
 - Why "no default IP": the same two images are reused across P1 → P2 → P3 — IPs are assigned per-topology at runtime, never baked into the image
 
+→ [Networking Basics reference](documentations/Basics.md) — key terms with diagrams, analogies, and resources
+
 **Repo structure:**
 ```
 P1/
-├── P1.gns3project              ← ZIP export (File > Export portable project, include base images)
-├── _yilin-host                 ← commented config explaining host container setup
-├── _yilin-router               ← commented config explaining router container setup
-├── configs/
-│   ├── router1.conf            ← runtime notes for router_yilin (no IPs)
-│   └── router2.conf            ← runtime notes for second router (no IPs)
-└── docker-images/
-    ├── host/
-    │   ├── Dockerfile          ← Image 1: Alpine 3.19 + busybox (built-in) + iproute2 + bash
-    │   └── entrypoint.sh       ← keeps container alive for GNS3 console
-    └── router/
-        ├── Dockerfile          ← Image 2: Alpine 3.19 + FRR + iproute2 + bash
-        ├── daemons             ← bgpd=yes, ospfd=yes, isisd=yes, zebra=yes
-        ├── frr.conf            ← FRR config skeleton (hostname router_yilin, no IPs)
-        └── sysctl.conf         ← net.ipv4.ip_forward=1
+├── host    ← host container setup (no IPs)
+└── router  ← router container setup (no IPs)
 ```
 
 **Workflow:**
-1. Build `host` image: Alpine 3.19 + `iproute2 bash` (busybox is built into Alpine)
-2. Build `router` image: Alpine 3.19 + FRR, copy `daemons` file enabling all four services
-3. Import both Docker images into GNS3 as Docker appliances (no persistent IP configured)
-4. Build topology: `host_yilin` ↔ `router_yilin`
-5. Start both nodes, verify with `ps` — expect `zebra`, `bgpd`, `ospfd`, `isisd` running in the router
-6. Export: GNS3 → File → Export portable project → ZIP with base images → `P1.gns3project`
+```
+ docker pull alpine:latest          Dockerfile (alpine + FRR + debug tools)
+        │                                         │
+        │  host image                             │  docker build -t yilin-router
+        ▼                                         ▼
+ ┌─────────────┐                        ┌─────────────────┐
+ │  host_yilin │                        │  router_yilin   │
+ │  (alpine)   │                        │  zebra bgpd     │
+ └─────────────┘                        │  ospfd isisd    │
+        │                               │  staticd        │
+        │   GNS3: add as Docker         └─────────────────┘
+        │   appliance (no default IP)            │
+        └──────────────┬─────────────────────────┘
+                       │
+                       ▼
+              GNS3 topology canvas
+              host_yilin ──eth0── router_yilin
+                       │
+                       ▼
+              start nodes → open console
+              verify: ps | grep -E 'zebra|bgpd|ospfd|isisd|staticd'
+                       │
+                       ▼
+              File → Export portable project
+              → ZIP with base images → P1.gns3project
+```
 
 ---
 
-## Part 2 — Discovering a VXLAN
+## Part 2 | Discovering a VXLAN
 
 **Concepts to learn:**
 - **VXLAN** (RFC 7348): tunnels L2 Ethernet frames over UDP port 4789 — lets machines on different physical segments act as if on the same LAN
@@ -89,7 +99,7 @@ P2/
 
 ---
 
-## Part 3 — BGP with EVPN
+## Part 3 | BGP with EVPN
 
 **Concepts to learn:**
 - **BGP EVPN** (RFC 7432): uses BGP as the control plane for VXLAN — replaces static/multicast VTEP discovery with BGP route advertisements; MACs are learned automatically without flooding
@@ -129,76 +139,3 @@ P3/
 6. Start hosts — verify `show bgp l2vpn evpn`: type-3 routes appear (one per VTEP); type-2 routes appear as hosts send traffic
 7. Ping between hosts on different VTEPs — Wireshark confirms VXLAN VNI=10 + ICMP + OSPF Hello packets
 8. Export as `P3.gns3project`
-
----
-
-## install commands 
-
-1. Install Docker on Debian 13
-
-```bash
-sudo apt update
-sudo apt install -y docker.io docker-buildx-plugin docker-compose-plugin
-sudo systemctl enable --now docker
-sudo usermod -aG docker "$USER"
-newgrp docker
-
-#verify
-docker --version
-sudo systemctl status docker --no-pager
-docker ps
-docker run --rm hello-world
-
-```
-
-2. Install GNS3 on Debian 13
-```bash
-sudo apt update
-sudo apt install -y python3-pip python3-venv pipx
-pipx ensurepath
-pipx install gns3-gui
-pipx install gns3-server
-
-
-
-#verify
-which gns3-gui
-which gns3server
-gns3-gui --version
-gns3server --version
-pipx list | grep -i gns3
-```
-
-3. Build the P1 Docker images inside the VM
-Host image:
-
-```
-cd /home/yilin/GITHUB/badass/P1/docker-images/host
-docker build -t yilin-host:alpine .
-```
-Router image:
-```
-cd /home/yilin/GITHUB/badass/P1/docker-images/router
-docker build -t yilin-router:alpine .
-```
-
-4. Check that the images exist
-```
-docker images | grep yilin
-```
-
-5. Open GNS3 and import the images
-6. Create the topology
-- `host_yilin`
-- `router_yilin`
-
-7. Verify inside the containers
-```bash
-# host
-ip addr
-# router
-ps -ef | grep -E 'zebra|bgpd|ospfd|isisd'
-vtysh -c "show running-config"
-```
-
-8. Export the portable project

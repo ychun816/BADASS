@@ -27,7 +27,7 @@
 | **Analogy** | Alpine = studio apartment (small, everything you need). BusyBox = Swiss Army knife (one tool, many blades) |
 | **Learn more** | [Alpine Linux](https://alpinelinux.org/) · [BusyBox](https://busybox.net/) · [Alpine Docker Hub](https://hub.docker.com/_/alpine) |
 
-![Buildroot + BusyBox](../Screenshot%20From%202026-05-22%2014-11-04.png)
+![Buildroot + BusyBox](buildroot-busybox.png)
 
 ---
 
@@ -41,7 +41,7 @@
 | **Analogy** | Like a post office pipeline: you write a letter (app), put it in an envelope with a destination address (socket/IP), drop it at the counter (system call), and the post office routes and delivers it (kernel → NIC) |
 | **Learn more** | [Linux Kernel Networking Docs](https://www.kernel.org/doc/html/latest/networking/) · [Illustrated guide to network stack](https://www.privateinternetaccess.com/blog/linux-networking-stack-from-the-ground-up-part-1/) |
 
-![Linux kernel networking stack](../image-1.png)
+![Linux kernel networking stack](linux-kernel-networking-stack.png)
 
 ---
 
@@ -55,7 +55,7 @@
 | **Analogy** | Like a dedicated phone line between your program and the kernel — instead of a raw system call, you send structured messages back and forth |
 | **Learn more** | [libnl project](https://www.infradead.org/~tgr/libnl/) · [Netlink — kernel docs](https://www.kernel.org/doc/html/latest/userspace-api/netlink/intro.html) |
 
-![libnl and Netlink](../image-7.png)
+![libnl and Netlink architecture](netlink-libnl-architecture.png)
 
 ---
 
@@ -70,7 +70,7 @@
 | **Analogy** | Like airport security checkpoints — every packet passes through gates where it can be inspected, redirected, or rejected before reaching its destination |
 | **Learn more** | [netfilter.org](https://netfilter.org/) · [iptables tutorial](https://www.frozentux.net/iptables-tutorial/iptables-tutorial.html) · [Netfilter hooks — kernel docs](https://www.netfilter.org/documentation/HOWTO/netfilter-hacking-HOWTO-3.html) |
 
-![iptables netfilter packet flow](../image.png)
+![iptables netfilter packet flow](netfilter-packet-flow.png)
 
 ---
 
@@ -84,7 +84,7 @@
 | **Analogy** | A road map: shows all roads (links), cities (nodes), and which highway to take to reach each destination (routing table entries) |
 | **Learn more** | [How routing works](https://www.cloudflare.com/learning/network-layer/what-is-a-router/) · [iproute2 `ip route`](https://man7.org/linux/man-pages/man8/ip-route.8.html) |
 
-![Network topology with routing tables](../image-2.png)
+![Network topology with routing tables](network-topology-routing-tables.png)
 
 ---
 
@@ -99,9 +99,9 @@
 | **Speed** | Slower — updated when topology changes | Faster — queried for every single packet |
 | **Analogy** | GPS map with all available roads and traffic data | Turn-by-turn directions for the route you chose |
 
-![Routing and Forwarding Tables](../image-3.png)
+![Routing and Forwarding Tables](routing-vs-forwarding-table.png)
 
-![Routing vs Forwarding table — flow](../Screenshot%20From%202026-05-22%2014-55-43.png)
+![Routing vs Forwarding table — flow](routing-forwarding-flow.png)
 
 **Learn more:** [RIB vs FIB explained](https://networklessons.com/cisco/ccnp-encor/rib-fib/) · [Cisco — routing and forwarding](https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/iproute_pi/configuration/xe-16/iri-xe-16-book/iri-overview.html)
 
@@ -117,7 +117,7 @@
 | **Analogy** | RIB = all available flights to your destination. FIB = the one flight you actually booked and are on |
 | **Learn more** | [RIB/FIB — NetworkLessons](https://networklessons.com/cisco/ccnp-encor/rib-fib/) · [FRR zebra docs](https://docs.frrouting.org/en/latest/zebra.html) |
 
-![RIB FIB — BGP OSPF Static feeding kernel](../image-4.png)
+![RIB FIB — BGP OSPF Static feeding kernel](rib-fib-diagram.png)
 
 ---
 
@@ -135,8 +135,8 @@
 
 **User space view — zebra bridging daemons and kernel:**
 
-![FRR Zebra user space architecture](../image-5.png)
+![FRR Zebra user space architecture](frr-zebra-userspace.png)
 
 **Full daemon stack — bgpd, ospfd, isisd → zebra → netlink → kernel/NICs:**
 
-![FRR full daemon architecture](../image-6.png)
+![FRR full daemon architecture](frr-daemon-architecture.png)
