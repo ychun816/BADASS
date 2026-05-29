@@ -1,3 +1,6 @@
+#!/bin/bash
+set -e
+
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl gnupg
 
@@ -20,23 +23,44 @@ install_docker() {
 		sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin
 		sudo systemctl enable docker
 		sudo systemctl start docker
+		sudo usermod -aG docker "$USER"
+		echo "Docker installed — re-login or run 'newgrp docker' to use without sudo"
+	fi
+}
+
+install_ubridge() {
+	if need_cmd ubridge; then
+		echo "ubridge already installed"
+	else
+		sudo apt-get install -y libpcap-dev git build-essential
+		TMP=$(mktemp -d)
+		git clone --depth=1 https://github.com/GNS3/ubridge.git "$TMP/ubridge"
+		make -C "$TMP/ubridge"
+		sudo make -C "$TMP/ubridge" install
+		rm -rf "$TMP"
+		# allow ubridge to capture packets without full root
+		sudo setcap cap_net_admin,cap_net_raw=eip "$(command -v ubridge)"
+		echo "ubridge installed"
 	fi
 }
 
 install_gns3() {
 	if need_cmd gns3; then
-		echo "gns3 installed"
+		echo "gns3 already installed"
 	else
-		sudo apt update
-		sudo apt install python3 python3-pip pipx python3-pyqt6 python3-pyqt6.sip python3-pyqt6.qtwebsockets python3-pyqt6.qtsvg \
-		qemu-kvm qemu-utils libvirt-clients libvirt-daemon-system virtinst software-properties-common gnupg2 \
-		python3-pyqt5.sip python3-sip
+		sudo apt-get install -y \
+			python3 python3-pip pipx \
+			python3-pyqt6 python3-pyqt6.sip python3-pyqt6.qtwebsockets python3-pyqt6.qtsvg \
+			python3-pyqt5.sip python3-sip \
+			qemu-kvm qemu-utils libvirt-clients libvirt-daemon-system virtinst \
+			software-properties-common gnupg2
 
 		pipx install --system-site-packages gns3-server
 		pipx install --system-site-packages gns3-gui
+		echo "GNS3 installed"
 	fi
 }
 
-
 install_docker
+install_ubridge
 install_gns3
