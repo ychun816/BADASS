@@ -51,9 +51,8 @@ install_gns3() {
 		sudo apt-get install -y \
 			python3 python3-pip pipx \
 			python3-pyqt6 python3-pyqt6.sip python3-pyqt6.qtwebsockets python3-pyqt6.qtsvg \
-			python3-pyqt5.sip python3-sip \
 			qemu-kvm qemu-utils libvirt-clients libvirt-daemon-system virtinst \
-			software-properties-common gnupg2
+			gnupg2
 
 		pipx install --system-site-packages gns3-server
 		pipx install --system-site-packages gns3-gui
@@ -61,6 +60,36 @@ install_gns3() {
 	fi
 }
 
+verify_install() {
+	echo ""
+	echo "=== Verify Installation ==="
+	local failed=0
+
+	if need_cmd docker; then
+		echo "[OK] docker   $(docker --version)"
+		sudo docker run --rm hello-world > /dev/null 2>&1 && echo "[OK] docker run hello-world passed" || { echo "[FAIL] docker run hello-world failed"; failed=1; }
+	else
+		echo "[FAIL] docker not found"; failed=1
+	fi
+
+	if need_cmd ubridge; then
+		echo "[OK] ubridge  $(ubridge --version 2>&1 | head -1)"
+	else
+		echo "[FAIL] ubridge not found"; failed=1
+	fi
+
+	if need_cmd gns3; then
+		echo "[OK] gns3     $(gns3 --version 2>&1 | head -1)"
+	else
+		echo "[FAIL] gns3 not found"; failed=1
+	fi
+
+	echo ""
+	[ $failed -eq 0 ] && echo "All checks passed." || echo "Some checks failed — see above."
+	return $failed
+}
+
 install_docker
 install_ubridge
 install_gns3
+verify_install
