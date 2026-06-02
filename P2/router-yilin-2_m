@@ -1,0 +1,10 @@
+ip link add br0 type bridge
+ip link set dev br0 up
+ip addr add 10.1.1.2/24 dev eth2
+ip link set eth2 up
+ip link add vxlan10 type vxlan id 10 dev eth2 \
+    group 239.1.1.1 dstport 4789
+ip link set vxlan10 up
+brctl addif br0 eth0
+brctl addif br0 vxlan10
+ip link set eth0 up
