@@ -5,6 +5,7 @@ sudo apt-get update
 sudo apt-get install -y ca-certificates curl gnupg
 
 need_cmd() { command -v "$1" >/dev/null 2>&1; }
+export PATH="$HOME/.local/bin:$PATH"
 
 install_docker() {
 	if need_cmd docker; then
@@ -24,7 +25,7 @@ install_docker() {
 		sudo systemctl enable docker
 		sudo systemctl start docker
 		sudo usermod -aG docker "$USER"
-		echo "Docker installed — re-login or run 'newgrp docker' to use without sudo"
+		echo "Docker installed — use 'sudo docker' until re-login or run 'newgrp docker'"
 	fi
 }
 
@@ -73,7 +74,7 @@ verify_install() {
 	fi
 
 	if need_cmd ubridge; then
-		echo "[OK] ubridge  $(ubridge --version 2>&1 | head -1)"
+		echo "[OK] ubridge  $(dpkg -s ubridge 2>/dev/null | grep ^Version | cut -d' ' -f2)"
 	else
 		echo "[FAIL] ubridge not found"; failed=1
 	fi
@@ -82,6 +83,12 @@ verify_install() {
 		echo "[OK] gns3     $(gns3 --version 2>&1 | head -1)"
 	else
 		echo "[FAIL] gns3 not found"; failed=1
+	fi
+
+	if need_cmd gns3server; then
+		echo "[OK] gns3server  $(gns3server --version 2>&1 | head -1)"
+	else
+		echo "[FAIL] gns3server not found"; failed=1
 	fi
 
 	echo ""
