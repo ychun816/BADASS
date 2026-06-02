@@ -1,0 +1,22 @@
+# Create a bridge interface br0 (acts as a virtual switch inside this router)
+ip link add br0 type bridge
+ip link set dev br0 up
+
+# Assign IP 6.1.1.2/24 to eth2
+# underlay interface (physical link to other routers)
+ip addr add 6.1.1.2/24 dev eth2
+ip link set eth2 up
+
+# Create VXLAN tunnel interface vxlan10
+ip link add vxlan10 type vxlan id 10 dev eth2 \
+    remote 6.1.1.1 local 6.1.1.2 dstport 4789
+ip link set vxlan10 up
+
+# Plug eth0 (host-facing interface) into the bridge
+brctl addif br0 eth0
+
+# Plug the VXLAN tunnel into the bridge
+# traffic from eth0 is now tunneled over vxlan10
+brctl addif br0 vxlan10
+
+ip link set eth0 up

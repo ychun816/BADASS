@@ -1,0 +1,48 @@
+# Create a bridge interface br0 (acts as a virtual switch inside this router)
+ip link add br0 type bridge
+# Bring br0 up
+ip link set dev br0 up
+
+# Assign IP 6.1.1.1/24 to eth1
+# underlay interface (physical link to other routers)
+ip addr add 6.1.1.1/24 dev eth1
+# Bring eth1 up
+ip link set eth1 up
+
+# Create VXLAN tunnel interface vxlan10:
+#   id 10        - VXLAN Network Identifier (VNI), must match on both ends
+#   dev eth1     - use eth1 as underlay (physical) interface for encapsulation
+#   remote       - IP of the remote VTEP (the other router's eth1: 10.1.1.2)
+#   local        - IP of this VTEP (this router's eth1: 6.1.1.1)
+#   dstport 4789 - standard VXLAN UDP port
+ip link add vxlan10 type vxlan id 10 dev eth1 \
+    remote 6.1.1.2 local 6.1.1.1 dstport 4789
+# Bring the VXLAN tunnel up
+ip link set vxlan10 up
+
+
+# Plug eth0 (host-facing interface) into the bridge
+brctl addif br0 eth0
+
+# Plug the VXLAN tunnel into the bridge
+# traffic from eth0 is now tunneled over vxlan10
+brctl addif br0 vxlan10
+
+# Bring eth0 up
+ip link set eth0 up
+
+
+# ## NOTES ### 
+
+# brctl addif br0 eth0
+# brctl addif br0 eth0 — plugs eth0 into the switch
+# eth0 faces local host (e.g. host-yilin-1)
+# Traffic arriving from the host enters the switch.
+
+# brctl addif br0 vxlan10
+# plugs the VXLAN tunnel into the same switch
+# The tunnel goes to the remote router over the underlay network
+
+# the host sends a frame → it hits eth0 → enters br0 → exits through vxlan10 → gets wrapped in a UDP packet → travels over the underlay (eth1) → arrives at the remote router → unwrapped → delivered to the remote host
+
+# ############
