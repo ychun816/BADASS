@@ -1,0 +1,44 @@
+# Base image: Alpine Linux (minimal, fast)
+FROM alpine:latest
+
+# Install network tools
+RUN apk add --no-cache \
+    frr frr-openrc \
+    frr-pythontools \
+    iproute2 \
+    iputils \
+    tcpdump \
+    bind-tools
+
+# Enable FRR routing daemons in /etc/frr/daemons config file
+RUN sed -i \
+    -e 's/^bgpd=no/bgpd=yes/' \
+    -e 's/^ospfd=no/ospfd=yes/' \
+    -e 's/^isisd=no/isisd=yes/' \
+    -e 's/^staticd=no/staticd=yes/' \
+    /etc/frr/daemons
+
+# Copy VXLAN setup scripts into the container (run manually inside the shell)
+COPY vxlan-unicast.sh /usr/local/bin/
+COPY vxlan-multicast.sh /usr/local/bin/
+
+# Start FRR daemons, then drop into an interactive shell for manual config
+CMD ["/bin/sh", "-c", "/usr/lib/frr/frrinit.sh start && exec /bin/sh"]
+
+
+#### NOTES ####
+
+#   frr          - Free Range Routing (BGP, OSPF, IS-IS routing daemons)
+#   frr-openrc   - FRR init scripts for OpenRC (Alpine's init system)
+#   frr-pythontools - helper scripts for FRR (vtysh config tools)
+#   iproute2     - ip, bridge commands (manage interfaces, routes, VXLAN)
+#   iputils      - ping
+#   tcpdump      - packet capture for debugging
+#   bind-tools   - dig, nslookup for DNS debugging
+
+#   bgpd   - BGP (used for EVPN/VXLAN control plane)
+#   ospfd  - OSPF (underlay IGP)
+#   isisd  - IS-IS (alternative underlay IGP)
+#   staticd - static routes support
+
+###############
