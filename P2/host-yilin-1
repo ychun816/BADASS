@@ -1,0 +1,14 @@
+# enter host console
+# assign IP
+# host gets IP 6.1.1.1 on the 6.1.1.0/24 network via its eth0 interface
+ip addr add 6.1.1.1/24 dev eth0
+
+
+### NOTES ###
+
+# ip addr add : assign an IP address to a network interface
+# /24 — subnet mask
+# network is 6.1.1.0/24 and valid hosts are 6.1.1.1 – 6.1.1.254
+# dev eth0 — apply it to the interface named eth0
+
+#############
