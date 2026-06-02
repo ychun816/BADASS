@@ -1,0 +1,115 @@
+# FRR-1 — Route Reflector (RR)
+# This router is the BGP Route Reflector for the EVPN control plane.
+# It does NOT have a VXLAN/bridge
+# it only runs the routing protocols
+
+# Enter FRR interactive config shell
+vtysh
+conf t
+
+# Underlay interfaces — point-to-point links to leaf routers (OSPF)
+# Each /30 = 2 usable IPs (one per end of the link)
+interface eth1
+ ip address 10.1.1.1/30   # link to router-2
+ ip ospf area 0            # participate in OSPF area 0 (underlay IGP)
+!
+interface eth2
+ ip address 10.1.1.5/30   # link to router-3
+ ip ospf area 0
+!
+interface eth3
+ ip address 10.1.1.9/30   # link to router-4
+ ip ospf area 0
+!
+
+# Loopback — stable router ID used as BGP update-source
+# /32 = host route, advertised via OSPF so all routers can reach it
+interface lo
+ ip address 1.1.1.1/32
+ ip ospf area 0
+!
+
+# BGP configuration
+# iBGP Route Reflector for L2VPN EVPN
+router bgp 1
+ bgp router-id 1.1.1.1
+
+ # Define a peer-group "ibgp" for all leaf routers (avoids repeating config)
+ neighbor ibgp peer-group
+ neighbor ibgp remote-as 1               # iBGP: same AS number
+ neighbor ibgp update-source lo          # use loopback as BGP source (stable)
+
+ # Dynamically accept any router in 1.1.1.0/29 as an iBGP peer
+ # (covers 1.1.1.1–1.1.1.6: router-1 to router-4)
+ bgp listen range 1.1.1.0/29 peer-group ibgp
+ !
+ address-family l2vpn evpn
+  neighbor ibgp activate                  # enable EVPN for this peer-group
+  neighbor ibgp route-reflector-client    # treat all peers as RR clients
+                                          # (RR reflects EVPN routes between leaves)
+ exit-address-family
+!
+
+# OSPF — underlay IGP to distribute loopback /32 routes between all routers
+router ospf
+ ospf router-id 1.1.1.1
+!
+line vty
+!
+end
+write  # save config to disk
+
+
+
+
+
+# ## NOTES ####
+
+# BGP Route Reflector:
+#   In iBGP, routers normally can't forward routes learned from one iBGP peer to another.
+#   The Route Reflector (RR) breaks this rule — it reflects routes from leaf routers
+#   to all other leaf routers, so leaves don't need to peer with each other directly.
+#   router-1 is the RR; router-2/3/4 are its "clients".
+
+# EVPN control plane:
+#   EVPN (Ethernet VPN) is a BGP address-family (l2vpn evpn) that carries
+#   MAC/IP reachability info over BGP instead of flooding like traditional switches.
+#   It tells each VTEP where remote MACs are → avoids broadcast flooding over VXLAN.
+
+# Loopback (/32):
+#   Virtual always-up interface. Used as stable BGP source IP.
+#   Even if one physical link goes down, other routers can still reach
+#   the loopback via an alternate OSPF path → BGP session stays up.
+
+# ip ospf area 0:
+#   Puts the interface into OSPF area 0 (backbone area).
+#   OSPF distributes loopback /32 routes so all routers know how to reach each other.
+
+# neighbor ibgp peer-group:
+#   A template — defines settings once and applies to all leaf routers.
+#   Avoids copy-pasting the same neighbor config for each router.
+
+# neighbor ibgp remote-as 1:
+#   All routers are in AS 1 → this is iBGP (internal BGP, same AS).
+
+# neighbor ibgp update-source lo:
+#   BGP session uses the loopback IP as source (stable, always reachable via OSPF).
+
+# bgp listen range 1.1.1.0/29 peer-group ibgp:
+#   Dynamically accepts any router whose loopback is in 1.1.1.0/29 (router-2/3/4).
+#   No need to manually specify each neighbor IP.
+
+# address-family l2vpn evpn:
+#   Activates the EVPN address family — enables exchange of MAC/IP routes via BGP.
+
+# neighbor ibgp route-reflector-client:
+#   Marks all ibgp peers as RR clients → router-1 will reflect their EVPN routes
+#   to all other clients (leaves learn remote MACs without direct BGP peering).
+
+# vtysh:
+#   FRR's interactive shell (like Cisco's CLI). All config above is typed inside it.
+
+# line vty:
+#   Configures virtual terminal access (telnet/SSH into the router CLI).
+
+# ############

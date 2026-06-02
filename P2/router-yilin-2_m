@@ -1,10 +1,27 @@
+# Create a bridge interface br0 (acts as a virtual switch inside this router)
+# Bring br0 up
 ip link add br0 type bridge
 ip link set dev br0 up
+
+# Assign IP 6.1.1.2/24 to eth2 — underlay interface (physical link to other routers)
+# Bring eth2 up
 ip addr add 10.1.1.2/24 dev eth2
 ip link set eth2 up
+
+# Create VXLAN tunnel interface vxlan10 using MULTICAST mode
+# Difference from unicast: no "remote/local" needed — multicast handles discovery
 ip link add vxlan10 type vxlan id 10 dev eth2 \
     group 239.1.1.1 dstport 4789
+# Bring the VXLAN tunnel up
 ip link set vxlan10 up
+
+# Plug eth0 (host-facing interface) into the bridge
 brctl addif br0 eth0
+
+# Plug the VXLAN tunnel into the bridge
+# traffic from eth0 is now tunneled over vxlan10 to ALL routers in the multicast group
+# Bring eth0 up
 brctl addif br0 vxlan10
 ip link set eth0 up
+
+

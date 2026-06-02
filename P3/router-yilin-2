@@ -1,0 +1,55 @@
+# FRR-2 — Leaf router (VTEP)
+# This is a leaf router: it has VXLAN + bridge to connect local hosts,
+# and peers with the Route Reflector (router-1) for EVPN.
+
+# Create virtual switch br0
+ip link add br0 type bridge
+ip link set dev br0 up
+
+# Create VXLAN tunnel:
+#   id 10       - VNI, must match on all VTEPs
+#   local 1.1.1.2 - this router's loopback IP (used as VTEP address)
+#   nolearning  - disable MAC learning on the tunnel; EVPN handles it via BGP
+ip link add vxlan10 type vxlan id 10 dstport 4789 local 1.1.1.2 nolearning
+ip link set dev vxlan10 up
+
+# Plug VXLAN tunnel and host-facing eth0 into the bridge
+brctl addif br0 vxlan10
+brctl addif br0 eth0
+
+# Enter FRR config shell
+vtysh
+conf t
+
+# Underlay link to router-1 (the Route Reflector)
+interface eth1
+ ip address 10.1.1.2/30
+ ip ospf area 0  # advertise this link via OSPF
+!
+
+# Loopback — stable VTEP IP, reachable by all routers via OSPF
+interface lo
+ ip address 1.1.1.2/32
+ ip ospf area 0
+!
+
+# BGP — iBGP leaf, peers only with the Route Reflector (1.1.1.1)
+router bgp 1
+ bgp router-id 1.1.1.2
+ neighbor 1.1.1.1 remote-as 1         # peer with RR (same AS = iBGP)
+ neighbor 1.1.1.1 update-source lo    # use loopback as BGP source
+ !
+ address-family l2vpn evpn
+  neighbor 1.1.1.1 activate           # enable EVPN with the RR
+  advertise-all-vni                   # advertise all local VNIs (vxlan10) to RR
+ exit-address-family
+!
+
+# OSPF — distributes loopback /32 routes so all routers can reach each other
+router ospf
+ ospf router-id 1.1.1.2
+!
+line vty
+!
+end
+write  # save config
